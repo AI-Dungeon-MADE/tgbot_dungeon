@@ -1,16 +1,15 @@
-import logging
 import os
 
-from telegram import Update, ForceReply
-from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, CallbackContext
+from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
 
-from tg_bot import start, echo, help_command
+from src.tg_bot import start, help_command, GameManager
 
 
 def main() -> None:
     """Start the bot."""
     # Create the Updater and pass it your bot's token.
     updater = Updater(os.environ["TOKEN"])
+    game_manager = GameManager()
 
     # Get the dispatcher to register handlers
     dispatcher = updater.dispatcher
@@ -20,7 +19,7 @@ def main() -> None:
     dispatcher.add_handler(CommandHandler("help", help_command))
 
     # on non command i.e message - echo the message on Telegram
-    dispatcher.add_handler(MessageHandler(Filters.text & ~Filters.command, echo))
+    dispatcher.add_handler(MessageHandler(Filters.text & ~Filters.command, game_manager.reply))
 
     # Start the Bot
     updater.start_polling()

@@ -1,22 +1,8 @@
-#!/usr/bin/env python
-# pylint: disable=C0116,W0613
-# This program is dedicated to the public domain under the CC0 license.
-
-"""
-Simple Bot to reply to Telegram messages.
-First, a few handler functions are defined. Then, those functions are passed to
-the Dispatcher and registered at their respective places.
-Then, the bot is started and runs until we press Ctrl-C on the command line.
-Usage:
-Basic Echobot example, repeats messages.
-Press Ctrl-C on the command line or send a signal to the process to stop the
-bot.
-"""
-
 from loguru import logger
-
+from made_ai_dungeon import StoryManager
+from made_ai_dungeon.models.generator_stub import GeneratorStub
 from telegram import Update, ForceReply
-from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, CallbackContext
+from telegram.ext import CallbackContext
 
 
 # Define a few command handlers. These usually take the two arguments update and
@@ -40,3 +26,18 @@ def echo(update: Update, context: CallbackContext) -> None:
     """Echo the user message."""
     update.message.reply_text(update.message.text)
 
+
+class GameManager:
+
+    def __init__(self, update: Update) -> None:
+        self.update = update
+        self.story_manager = StoryManager(GeneratorStub())
+
+    def reply(self, update: Update, context: CallbackContext) -> None:
+        """Echo the user message."""
+        user_id = str(update.chat_member.from_user.id)
+        input_message = update.message.text
+        logger.debug("User ID: {uid}, Input message: {im}", uid=user_id, im=input_message)
+        reply_message = self.story_manager.generate_story(user_id, input_message)
+        reply_message += user_id
+        update.message.reply_text(reply_message)
