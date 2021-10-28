@@ -1,8 +1,16 @@
+import torch
+
 from loguru import logger
-from made_ai_dungeon import StoryManager
-from made_ai_dungeon.models.generator_stub import GeneratorStub
 from telegram import Update, ForceReply
 from telegram.ext import CallbackContext
+
+# from made_ai_dungeon import StoryManager
+# from made_ai_dungeon.models.generator_stub import GeneratorStub
+from lstm import CharLSTM
+
+model = CharLSTM(num_layers=2, num_units=196, dropout=0.05)
+model.load_state_dict(torch.load('/app/models/Char_LSTM_Samurai.pth'))
+logger.info("Successfully loaded model weights")
 
 
 # Define a few command handlers. These usually take the two arguments update and
@@ -29,14 +37,14 @@ def echo(update: Update, context: CallbackContext) -> None:
 
 class GameManager:
 
-    def __init__(self) -> None:
-        self.story_manager = StoryManager(GeneratorStub())
+    # def __init__(self) -> None:
+    #     self.story_manager = StoryManager(model)
 
     def reply(self, update: Update, context: CallbackContext) -> None:
         """Echo the user message."""
         user_id = str(update.message.chat_id)
         input_message = update.message.text
         logger.debug("User ID: {uid}, Input message: {im}", uid=user_id, im=input_message)
-        reply_message = self.story_manager.generate_story(user_id, input_message)
-        reply_message += user_id
+        # reply_message = self.story_manager.generate_story(user_id, input_message)
+        reply_message = model.generate(seed_phrase=input_message, max_length=200)
         update.message.reply_text(reply_message)

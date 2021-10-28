@@ -22,7 +22,7 @@ def main() -> None:
     dispatcher.add_handler(MessageHandler(Filters.text & ~Filters.command, game_manager.reply))
 
     # Start the Bot
-    updater.start_polling()
+    updater.start_polling() # drop_pending_updates=True
 
     # Run the bot until you press Ctrl-C or the process receives SIGINT,
     # SIGTERM or SIGABRT. This should be used most of the time, since
