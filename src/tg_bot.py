@@ -29,8 +29,7 @@ def echo(update: Update, context: CallbackContext) -> None:
 
 class GameManager:
 
-    def __init__(self, update: Update) -> None:
-        self.update = update
+    def __init__(self) -> None:
         self.story_manager = StoryManager(GeneratorStub())
 
     def reply(self, update: Update, context: CallbackContext) -> None:
