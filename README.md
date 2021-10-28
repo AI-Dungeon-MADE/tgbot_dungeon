@@ -6,3 +6,7 @@ docker run -e TOKEN='TOKEN' --network host tgbot
 ```angular2html
 docker build -t tgbot .  
 ```
+
+```angular2html
+docker rm $(docker ps --filter status=exited -q)
+```

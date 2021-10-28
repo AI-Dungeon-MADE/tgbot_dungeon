@@ -34,7 +34,7 @@ class GameManager:
 
     def reply(self, update: Update, context: CallbackContext) -> None:
         """Echo the user message."""
-        user_id = str(update.chat_member.from_user.id)
+        user_id = str(update.message.chat_id)
         input_message = update.message.text
         logger.debug("User ID: {uid}, Input message: {im}", uid=user_id, im=input_message)
         reply_message = self.story_manager.generate_story(user_id, input_message)
