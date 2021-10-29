@@ -1,4 +1,4 @@
-torch==1.8.0
+torch==1.9.1
 loguru==0.5.3
 python-telegram-bot==13.7
 made-ai-dungeon==0.0.1
