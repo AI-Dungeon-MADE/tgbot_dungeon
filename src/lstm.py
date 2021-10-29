@@ -1,5 +1,8 @@
-import torch, torch.nn as nn
+from typing import Optional
+
 import numpy as np
+import torch
+import torch.nn as nn
 import torch.nn.functional as F
 
 tokens = [' ', 'а', 'б', 'в', 'г', 'д', 'е', 'ж', 'з', 'и', 'й', 'к', 'л', 'м', 'н', 'о',
@@ -37,15 +40,16 @@ class CharLSTM(nn.Module):
 
     def initial_state(self, batch_size):
         """Return RNN state before it processes the first input (h0)."""
-        return torch.zeros(self.num_layers, batch_size, self.num_units),\
+        return torch.zeros(self.num_layers, batch_size, self.num_units), \
                torch.zeros(self.num_layers, batch_size, self.num_units)
 
-    def generate(self, seed_phrase=' ', max_length=100, temperature=1.0):
+    def generate_text(self, seed_phrase: str = ' ', hid_state: Optional[torch.Tensor] = None, max_length=100,
+                      temperature=1.0) -> tuple[str, tuple[torch.Tensor, ...]]:
         # model.to('cpu')
-        x_sequence = [token_to_idx[token] for token in seed_phrase]
+        x_sequence = [token_to_idx[token] for token in seed_phrase.lower() if token in tokens]
         x_sequence = torch.tensor([x_sequence], dtype=torch.int64)
-        hid_state = self.initial_state(batch_size=1)
-
+        if hid_state is None:
+            hid_state = self.initial_state(batch_size=1)
         # start generating
         for i in range(max_length - len(seed_phrase)):
             logp_next, hid_state = self.forward(x_sequence[..., -1:], hid_state)
@@ -55,4 +59,5 @@ class CharLSTM(nn.Module):
             next_ix = torch.tensor([[next_ix]], dtype=torch.int64)
             x_sequence = torch.cat([x_sequence, next_ix], dim=-1)
 
-        return ''.join([tokens[ix] for ix in x_sequence.data.numpy()[0]])
+        generated_text = ''.join([tokens[ix] for ix in x_sequence.data.numpy()[0]])
+        return generated_text, hid_state
