@@ -1,3 +1,4 @@
+import os
 from typing import Dict, List
 
 import torch
@@ -19,7 +20,7 @@ def start(update: Update, context: CallbackContext) -> None:
     logger.info("/start done")
     update.message.reply_text(
         fr'Hi {user.mention_markdown_v2()}\!', reply_markup=ForceReply(selective=True),
-    ) #reply_markdown_v2
+    )  # reply_markdown_v2
     update.message.reply_text(
         "Select story generator 0 - Stub, \n 1 - LSTM, \n 2 - Hugginface Generator (Example: /set_generator 0)"
     )
