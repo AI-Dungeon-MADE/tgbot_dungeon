@@ -16,9 +16,9 @@ def start(update: Update, context: CallbackContext) -> None:
     """Send a message when the command /start is issued."""
     user = update.effective_user
     logger.info("/start done")
-    update.message.reply_markdown_v2(
+    update.message.reply_text(
         fr'Hi {user.mention_markdown_v2()}\!', reply_markup=ForceReply(selective=True),
-    )
+    ) #reply_markdown_v2
     update.message.reply_text("Select story generator 0 - for LSTM, \n 1 - for Stub (Example: /set_generator 0)")
 
 
