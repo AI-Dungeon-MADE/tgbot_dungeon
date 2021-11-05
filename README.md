@@ -1,7 +1,6 @@
 run:
 ```angular2html
-docker run -e TOKEN --network host tgbot
-docker run -e TOKEN -v "$(pwd)":/app --network host tgbot
+docker run -e TOKEN -e HUGGINFACE_KEY -v "$(pwd)":/app --network host tgbot
 ```
 build:
 ```angular2html
