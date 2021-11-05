@@ -70,6 +70,6 @@ class GameManager:
                 self.picked_story_manager[chat_id] = int(context.args[0])
                 update.message.reply_text(f"Chat ID {chat_id} picked generator is {picked_story}")
             else:
-                update.message.reply_text("Usage: /set_generator <0 or 1>")
+                update.message.reply_text("Usage: /set_generator <0, 1, 2>")
         except (IndexError, ValueError):
-            update.message.reply_text("Usage: /set_generator <0 or 1>")
+            update.message.reply_text("Usage: /set_generator <0, 1, 2>")
