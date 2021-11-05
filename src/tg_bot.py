@@ -1,6 +1,9 @@
+from typing import Dict, List
+
 import torch
 from loguru import logger
 from made_ai_dungeon import StoryManager
+from made_ai_dungeon.models.generator_stub import GeneratorStub
 from telegram import Update, ForceReply
 from telegram.ext import CallbackContext
 
@@ -14,7 +17,8 @@ def start(update: Update, context: CallbackContext) -> None:
     user = update.effective_user
     logger.info("/start done")
     update.message.reply_markdown_v2(
-        fr'Hi {user.mention_markdown_v2()}\!',
+        fr'''Hi {user.mention_markdown_v2()}\!\n
+        Select story generator 0 - for LSTM, \n 1 - for Stub (Example: /set_generator 0)''',
         reply_markup=ForceReply(selective=True),
     )
 
@@ -35,12 +39,26 @@ class GameManager:
         model = CharLSTM(num_layers=2, num_units=196, dropout=0.05)
         model.load_state_dict(torch.load('/app/models/Char_LSTM_Samurai.pth'))
         logger.info("Successfully loaded model weights")
-        self.story_manager = StoryManager(model)
+        self.story_managers: List[StoryManager] = [StoryManager(model), StoryManager(GeneratorStub())]
+        self.picked_story_manager: Dict[int, int] = {}
 
     def reply(self, update: Update, context: CallbackContext) -> None:
         """Echo the user message."""
-        user_id = str(update.message.chat_id)
+        chat_id = update.message.chat_id
         input_message = update.message.text
-        logger.debug("User ID: {uid}, Input message: {im}", uid=user_id, im=input_message)
-        reply_message = self.story_manager.generate_story(user_id, input_message)
+        logger.debug("Chat ID: {uid}, Input message: {im}", uid=chat_id, im=input_message)
+        picked_sm = self.picked_story_manager.get(chat_id, 1)
+        reply_message = self.story_managers[picked_sm].generate_story(str(chat_id), input_message)
         update.message.reply_text(reply_message)
+
+    def select_generator(self, update: Update, context: CallbackContext) -> None:
+        chat_id = update.message.chat_id
+        try:
+            picked_story = int(context.args[0])
+            if picked_story in {0, 1}:
+                self.picked_story_manager[chat_id] = int(context.args[0])
+                update.message.reply_text(f"Chat ID {chat_id} picked generator is 0")
+            else:
+                update.message.reply_text("Usage: /set_generator <0 or 1>")
+        except (IndexError, ValueError):
+            update.message.reply_text("Usage: /set_generator <0 or 1>")
