@@ -22,7 +22,7 @@ def start(update: Update, context: CallbackContext) -> None:
         fr'Hi {user.mention_markdown_v2()}\!', reply_markup=ForceReply(selective=True),
     )  # reply_markdown_v2
     update.message.reply_text(
-        "Select story generator 0 - Stub, \n 1 - LSTM, \n 2 - Hugginface Generator (Example: /set_generator 0)"
+        "Select story generator:\n 0 - Stub, \n 1 - LSTM, \n 2 - Hugginface Generator (Example: /set_generator 0)"
     )
 
 
@@ -46,8 +46,9 @@ class GameManager:
         headers = {"Authorization": os.environ["HUGGINFACE_KEY"]}
         self.story_managers: List[StoryManager] = [
             StoryManager(GeneratorStub()),
+            StoryManager(model),
             StoryManager(HugginfaceGenerator(api_url, headers)),
-            StoryManager(model)
+
         ]
         self.picked_story_manager: Dict[int, int] = {}
 
@@ -66,7 +67,7 @@ class GameManager:
         try:
             logger.info(context)
             picked_story = int(context.args[0])
-            if picked_story in {0, 1}:
+            if picked_story in set(range(len(self.story_managers))):
                 self.picked_story_manager[chat_id] = int(context.args[0])
                 update.message.reply_text(f"Chat ID {chat_id} picked generator is {picked_story}")
             else:
