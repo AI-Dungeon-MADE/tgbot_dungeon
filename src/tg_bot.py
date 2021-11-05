@@ -36,7 +36,7 @@ class GameManager:
 
     def __init__(self) -> None:
         model = CharLSTM(num_layers=2, num_units=196, dropout=0.05)
-        model.load_state_dict(torch.load('./models/Char_LSTM_Samurai.pth'))
+        model.load_state_dict(torch.load('/app/models/Char_LSTM_Samurai.pth'))
         logger.info("Successfully loaded model weights")
         self.story_managers: List[StoryManager] = [StoryManager(model), StoryManager(GeneratorStub())]
         self.picked_story_manager: Dict[int, int] = {}
