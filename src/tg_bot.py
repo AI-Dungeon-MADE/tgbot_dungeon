@@ -47,16 +47,18 @@ class GameManager:
         input_message = update.message.text
         logger.debug("Chat ID: {uid}, Input message: {im}", uid=chat_id, im=input_message)
         picked_sm = self.picked_story_manager.get(chat_id, 1)
+        logger.debug("picked story manager {psm}", psm=picked_sm)
         reply_message = self.story_managers[picked_sm].generate_story(str(chat_id), input_message)
         update.message.reply_text(reply_message)
 
     def select_generator(self, update: Update, context: CallbackContext) -> None:
         chat_id = update.message.chat_id
         try:
+            logger.info(context)
             picked_story = int(context.args[0])
             if picked_story in {0, 1}:
                 self.picked_story_manager[chat_id] = int(context.args[0])
-                update.message.reply_text(f"Chat ID {chat_id} picked generator is 0")
+                update.message.reply_text(f"Chat ID {chat_id} picked generator is {picked_story}")
             else:
                 update.message.reply_text("Usage: /set_generator <0 or 1>")
         except (IndexError, ValueError):
