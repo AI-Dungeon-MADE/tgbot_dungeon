@@ -3,6 +3,7 @@ from typing import Dict, List
 import torch
 from loguru import logger
 from made_ai_dungeon import StoryManager
+from made_ai_dungeon.models import HugginfaceGenerator
 from made_ai_dungeon.models.generator_stub import GeneratorStub
 from telegram import Update, ForceReply
 from telegram.ext import CallbackContext
@@ -19,7 +20,9 @@ def start(update: Update, context: CallbackContext) -> None:
     update.message.reply_text(
         fr'Hi {user.mention_markdown_v2()}\!', reply_markup=ForceReply(selective=True),
     ) #reply_markdown_v2
-    update.message.reply_text("Select story generator 0 - for LSTM, \n 1 - for Stub (Example: /set_generator 0)")
+    update.message.reply_text(
+        "Select story generator 0 - Stub, \n 1 - LSTM, \n 2 - Hugginface Generator (Example: /set_generator 0)"
+    )
 
 
 def help_command(update: Update, context: CallbackContext) -> None:
@@ -38,7 +41,13 @@ class GameManager:
         model = CharLSTM(num_layers=2, num_units=196, dropout=0.05)
         model.load_state_dict(torch.load('/app/models/Char_LSTM_Samurai.pth'))
         logger.info("Successfully loaded model weights")
-        self.story_managers: List[StoryManager] = [StoryManager(model), StoryManager(GeneratorStub())]
+        api_url = "https://api-inference.huggingface.co/models/sberbank-ai/rugpt3small_based_on_gpt2"
+        headers = {"Authorization": os.environ["HUGGINFACE_KEY"]}
+        self.story_managers: List[StoryManager] = [
+            StoryManager(GeneratorStub()),
+            StoryManager(HugginfaceGenerator(api_url, headers)),
+            StoryManager(model)
+        ]
         self.picked_story_manager: Dict[int, int] = {}
 
     def reply(self, update: Update, context: CallbackContext) -> None:
@@ -46,7 +55,7 @@ class GameManager:
         chat_id = update.message.chat_id
         input_message = update.message.text
         logger.debug("Chat ID: {uid}, Input message: {im}", uid=chat_id, im=input_message)
-        picked_sm = self.picked_story_manager.get(chat_id, 1)
+        picked_sm = self.picked_story_manager.get(chat_id, 0)
         logger.debug("picked story manager {psm}", psm=picked_sm)
         reply_message = self.story_managers[picked_sm].generate_story(str(chat_id), input_message)
         update.message.reply_text(reply_message)
