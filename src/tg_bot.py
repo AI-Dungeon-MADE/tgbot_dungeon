@@ -60,6 +60,7 @@ class GameManager:
         picked_sm = self.picked_story_manager.get(chat_id, 0)
         logger.debug("picked story manager {psm}", psm=picked_sm)
         reply_message = self.story_managers[picked_sm].generate_story(chat_id, input_message)
+        logger.debug(f"{reply_message=}")
         update.message.reply_text(reply_message)
 
     def select_generator(self, update: Update, context: CallbackContext) -> None:
