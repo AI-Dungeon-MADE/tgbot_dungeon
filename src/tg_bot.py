@@ -19,16 +19,16 @@ def start(update: Update, context: CallbackContext) -> None:
     user = update.effective_user
     logger.info("/start done")
     update.message.reply_text(
-        fr'Hi {user.mention_markdown_v2()}\!', reply_markup=ForceReply(selective=True),
+        fr'Hi {user.mention_markdown_v2()}\!',
     )  # reply_markdown_v2
-    update.message.reply_text(
-        "Select story generator:\n 0 - Stub, \n 1 - LSTM, \n 2 - Hugginface Generator (Example: /set_generator 0)"
-    )
+
 
 
 def help_command(update: Update, context: CallbackContext) -> None:
     """Send a message when the command /help is issued."""
-    update.message.reply_text('Help!')
+    update.message.reply_text(
+        "Select story generator:\n 0 - Stub, \n 1 - LSTM, \n 2 - Hugginface Generator (Example: /set_generator 0)"
+    )
 
 
 def echo(update: Update, context: CallbackContext) -> None:
@@ -42,7 +42,7 @@ class GameManager:
         model = CharLSTM(num_layers=2, num_units=196, dropout=0.05)
         model.load_state_dict(torch.load('/app/models/Char_LSTM_Samurai.pth'))
         logger.info("Successfully loaded model weights")
-        api_url = "https://api-inference.huggingface.co/models/sberbank-ai/rugpt3small_based_on_gpt2"
+        api_url = "https://api-inference.huggingface.co/models/aoryabinin/aoryabinin_gpt_ai_dungeon_ru"
         headers = {"Authorization": os.environ["HUGGINFACE_KEY"]}
         self.story_managers: List[StoryManager] = [
             StoryManager(GeneratorStub()),
@@ -59,7 +59,7 @@ class GameManager:
         logger.debug("Chat ID: {uid}, Input message: {im}", uid=chat_id, im=input_message)
         picked_sm = self.picked_story_manager.get(chat_id, 0)
         logger.debug("picked story manager {psm}", psm=picked_sm)
-        reply_message = self.story_managers[picked_sm].generate_story(str(chat_id), input_message)
+        reply_message = self.story_managers[picked_sm].generate_story(chat_id, input_message)
         update.message.reply_text(reply_message)
 
     def select_generator(self, update: Update, context: CallbackContext) -> None:
@@ -74,3 +74,9 @@ class GameManager:
                 update.message.reply_text("Usage: /set_generator <0, 1, 2>")
         except (IndexError, ValueError):
             update.message.reply_text("Usage: /set_generator <0, 1, 2>")
+
+    def reset_context(self, update: Update, context: CallbackContext) -> None:
+        chat_id = update.message.chat_id
+        for sm in self.story_managers:
+            if chat_id in sm.story_context_cache:
+                sm.story_context_cache.pop(chat_id)
