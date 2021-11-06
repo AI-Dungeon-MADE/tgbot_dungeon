@@ -6,11 +6,11 @@ from loguru import logger
 from made_ai_dungeon import StoryManager
 from made_ai_dungeon.models import HugginfaceGenerator
 from made_ai_dungeon.models.generator_stub import GeneratorStub
-from telegram import Update, ForceReply
+from telegram import Update
 from telegram.ext import CallbackContext
 
 from src.lstm import CharLSTM
-
+from src.message_processing import process_message
 
 # Define a few command handlers. These usually take the two arguments update and
 # context.
@@ -21,7 +21,6 @@ def start(update: Update, context: CallbackContext) -> None:
     update.message.reply_text(
         fr'Hi {user.mention_markdown_v2()}\!',
     )  # reply_markdown_v2
-
 
 
 def help_command(update: Update, context: CallbackContext) -> None:
@@ -61,7 +60,8 @@ class GameManager:
         logger.debug("picked story manager {psm}", psm=picked_sm)
         reply_message = self.story_managers[picked_sm].generate_story(chat_id, input_message)
         logger.debug(f"{reply_message=}")
-        update.message.reply_text(reply_message)
+        processed_reply_message = process_message(reply_message)
+        update.message.reply_text(processed_reply_message)
 
     def select_generator(self, update: Update, context: CallbackContext) -> None:
         chat_id = update.message.chat_id
