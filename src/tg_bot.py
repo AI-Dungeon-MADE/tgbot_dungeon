@@ -42,7 +42,7 @@ class GameManager:
         model = CharLSTM(num_layers=2, num_units=196, dropout=0.05)
         model.load_state_dict(torch.load('/app/models/Char_LSTM_Samurai.pth'))
         logger.info("Successfully loaded model weights")
-        api_url = "https://api-inference.huggingface.co/models/aoryabinin/aoryabinin_gpt_ai_dungeon_ru"
+        api_url = "https://api-inference.huggingface.co/models/Mary222/MADE_AI_Dungeon_model_RUS"
         headers = {"Authorization": os.environ["HUGGINFACE_KEY"]}
         self.story_managers: List[StoryManager] = [
             StoryManager(GeneratorStub()),
