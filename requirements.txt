@@ -4,3 +4,4 @@ python-telegram-bot==13.7
 made-ai-dungeon==0.0.3a1
 numpy==1.21.2
 requests==2.26.0
+pydantic==1.8.2
