@@ -93,7 +93,8 @@ class GameManager:
         chat_id = update.message.chat_id
         logger.info("Chat ID {ci} started new story", ci=chat_id)
         picked_sm = self.picked_story_manager.get(chat_id, 0)
-        if chat_id in picked_sm.story_context_cache:
+        story_manager = self.story_managers[picked_sm]
+        if chat_id in story_manager.story_context_cache:
             picked_sm.story_context_cache.pop(chat_id)
-        reply_message = self.story_managers[picked_sm].generate_story(chat_id, start_text)
+        reply_message = story_manager.generate_story(chat_id, start_text)
         update.message.reply_text(reply_message)
