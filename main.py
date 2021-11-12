@@ -9,7 +9,8 @@ def main() -> None:
     """Start the bot."""
     # Create the Updater and pass it your bot's token.
     updater = Updater(os.environ["TOKEN"])
-    game_manager = GameManager()
+    config_path = "app/config/rest_generator_config.yaml"
+    game_manager = GameManager(config_path)
 
     # Get the dispatcher to register handlers
     dispatcher = updater.dispatcher
