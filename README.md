@@ -1,6 +1,6 @@
 run:
 ```angular2html
-docker run -e COLLAB_HOST=https://a7d3-34-90-75-191.ngrok.io -e TOKEN -e HUGGINFACE_KEY -v "$(pwd)":/app --network host tgbot
+docker run -e TOKEN -e HUGGINFACE_KEY -v "$(pwd)":/app --network host tgbot
 ```
 build:
 ```angular2html

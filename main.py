@@ -2,7 +2,7 @@ import os
 
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
 
-from src.tg_bot import start, help_command, GameManager
+from src.tg_bot import start, GameManager
 
 
 def main() -> None:
