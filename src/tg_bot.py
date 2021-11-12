@@ -88,7 +88,7 @@ class GameManager:
         url_generators = {name: StoryManager(RestApiGenerator(host_url=url, context_length=5000))
                           for name, url in rest_generators_configs.generators.items()}
         pop_set = set(self.story_managers.keys()) - set(url_generators.keys())
-        pop_set -= "stub"
+        pop_set -= {"stub"}
         new_set = set(url_generators.keys()) - set(self.story_managers.keys())
         for name in pop_set:
             self.story_managers.pop(name)
@@ -101,5 +101,5 @@ class GameManager:
         """Send a message when the command /help is issued."""
         generators_str = '\n'.join(self.story_managers.keys())
         update.message.reply_text(
-            f"Select story generator:\n{generators_str}(Example: /set_generator stub)"
+            f"Select story generator:\n{generators_str} \n(Example: /set_generator stub)"
         )
