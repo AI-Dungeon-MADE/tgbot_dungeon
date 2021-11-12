@@ -88,7 +88,7 @@ class GameManager:
         url_generators = {name: StoryManager(RestApiGenerator(host_url=url, context_length=5000))
                           for name, url in rest_generators_configs.generators.items()}
         pop_set = set(self.story_managers.keys()) - set(url_generators.keys())
-        pop_set.pop("stub")
+        pop_set -= "stub"
         new_set = set(url_generators.keys()) - set(self.story_managers.keys())
         for name in pop_set:
             self.story_managers.pop(name)
