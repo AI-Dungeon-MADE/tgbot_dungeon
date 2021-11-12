@@ -16,10 +16,11 @@ def main() -> None:
 
     # on different commands - answer in Telegram
     dispatcher.add_handler(CommandHandler("start", start))
-    dispatcher.add_handler(CommandHandler("help", help_command))
+    dispatcher.add_handler(CommandHandler("help", game_manager.help_command))
     dispatcher.add_handler(CommandHandler("set_generator", game_manager.select_generator))
     dispatcher.add_handler(CommandHandler("reset", game_manager.reset_context))
     dispatcher.add_handler(CommandHandler("start_story", game_manager.start_story))
+    dispatcher.add_handler(CommandHandler("update_generators", game_manager.update_generators))
 
     # on non command i.e message - echo the message on Telegram
     dispatcher.add_handler(MessageHandler(Filters.text & ~Filters.command, game_manager.reply))
