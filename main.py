@@ -17,12 +17,15 @@ def main() -> None:
     # on different commands - answer in Telegram
     dispatcher.add_handler(CommandHandler("start", start))
     dispatcher.add_handler(CommandHandler("help", help_command))
+    dispatcher.add_handler(CommandHandler("set_generator", game_manager.select_generator))
+    dispatcher.add_handler(CommandHandler("reset", game_manager.reset_context))
+    dispatcher.add_handler(CommandHandler("start_story", game_manager.start_story))
 
     # on non command i.e message - echo the message on Telegram
     dispatcher.add_handler(MessageHandler(Filters.text & ~Filters.command, game_manager.reply))
 
     # Start the Bot
-    updater.start_polling() # drop_pending_updates=True
+    updater.start_polling(timeout=1000, drop_pending_updates=True)
 
     # Run the bot until you press Ctrl-C or the process receives SIGINT,
     # SIGTERM or SIGABRT. This should be used most of the time, since
