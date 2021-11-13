@@ -1,16 +1,13 @@
-import os
-from typing import Dict, List
+from typing import Dict
 
-import torch
 from loguru import logger
 from made_ai_dungeon import StoryManager
-from made_ai_dungeon.models import HugginfaceGenerator
 from made_ai_dungeon.models.generator_stub import GeneratorStub
 from made_ai_dungeon.models.rest_api_generator import RestApiGenerator
 from telegram import Update
 from telegram.ext import CallbackContext
 
-from src.lstm import CharLSTM
+from src.entities import RestGenerators, read_rest_generators_config
 from src.message_processing import process_message
 
 
@@ -25,14 +22,6 @@ def start(update: Update, context: CallbackContext) -> None:
     )  # reply_markdown_v2
 
 
-def help_command(update: Update, context: CallbackContext) -> None:
-    """Send a message when the command /help is issued."""
-    update.message.reply_text(
-        """Select story generator:\n 0 - Stub, \n 1 - LSTM, \n 2 - Hugginface Generator \n 
-        3 - RestApi Generator (Example: /set_generator 0)"""
-    )
-
-
 def echo(update: Update, context: CallbackContext) -> None:
     """Echo the user message."""
     update.message.reply_text(update.message.text)
@@ -40,27 +29,21 @@ def echo(update: Update, context: CallbackContext) -> None:
 
 class GameManager:
 
-    def __init__(self) -> None:
-        model = CharLSTM(num_layers=2, num_units=196, dropout=0.05)
-        model.load_state_dict(torch.load('/app/models/Char_LSTM_Samurai.pth'))
-        logger.info("Successfully loaded model weights")
-        hug_api_url = "https://api-inference.huggingface.co/models/Mary222/MADE_AI_Dungeon_model_RUS"
-        collab_url = os.environ["COLLAB_HOST"]
-        headers = {"Authorization": os.environ["HUGGINFACE_KEY"]}
-        self.story_managers: List[StoryManager] = [
-            StoryManager(GeneratorStub()),
-            StoryManager(model),
-            StoryManager(HugginfaceGenerator(hug_api_url, headers)),
-            StoryManager(RestApiGenerator(collab_url, 2000)),
-        ]
-        self.picked_story_manager: Dict[int, int] = {}
+    def __init__(self, generator_config_path: str) -> None:
+        self.story_managers: Dict[StoryManager] = {"stub": StoryManager(GeneratorStub())}
+        self.generator_config_path = generator_config_path
+        rest_generators_configs: RestGenerators = read_rest_generators_config(self.generator_config_path)
+        url_generators = {name: StoryManager(RestApiGenerator(host_url=url, context_length=5000))
+                          for name, url in rest_generators_configs.generators.items()}
+        self.story_managers.update(url_generators)
+        self.picked_story_manager: Dict[int, str] = {}
 
     def reply(self, update: Update, context: CallbackContext) -> None:
         """Echo the user message."""
         chat_id = update.message.chat_id
-        input_message = "\n >Вы сказали: " + update.message.text
+        input_message = "\n" + update.message.text
         logger.debug("Chat ID: {uid}, Input message: {im}", uid=chat_id, im=input_message)
-        picked_sm = self.picked_story_manager.get(chat_id, 0)
+        picked_sm = self.picked_story_manager.get(chat_id, "stub")
         logger.debug("picked story manager {psm}", psm=picked_sm)
         reply_message = self.story_managers[picked_sm].generate_story(chat_id, input_message)
         logger.debug(f"{reply_message=}")
@@ -69,16 +52,17 @@ class GameManager:
 
     def select_generator(self, update: Update, context: CallbackContext) -> None:
         chat_id = update.message.chat_id
+        generators_str = ' '.join(self.story_managers.keys())
         try:
             logger.info(context)
-            picked_story = int(context.args[0])
-            if picked_story in set(range(len(self.story_managers))):
-                self.picked_story_manager[chat_id] = int(context.args[0])
+            picked_story = context.args[0]
+            if picked_story in self.story_managers.keys():
+                self.picked_story_manager[chat_id] = picked_story
                 update.message.reply_text(f"Chat ID {chat_id} picked generator is {picked_story}")
             else:
-                update.message.reply_text("Usage: /set_generator <0, 1, 2, 3>")
+                update.message.reply_text(f"Usage: /set_generator <{generators_str}>")
         except (IndexError, ValueError):
-            update.message.reply_text("Usage: /set_generator <0, 1, 2, 3>")
+            update.message.reply_text(f"Usage: /set_generator <{generators_str}>")
 
     def reset_context(self, update: Update, context: CallbackContext) -> None:
         chat_id = update.message.chat_id
@@ -92,9 +76,27 @@ class GameManager:
         видите сегодняшний военный брифинг."""
         chat_id = update.message.chat_id
         logger.info("Chat ID {ci} started new story", ci=chat_id)
-        picked_sm = self.picked_story_manager.get(chat_id, 0)
+        picked_sm = self.picked_story_manager.get(chat_id, "stub")
         story_manager = self.story_managers[picked_sm]
         if chat_id in story_manager.story_context_cache:
             story_manager.story_context_cache.pop(chat_id)
-        reply_message = story_manager.generate_story(chat_id, start_text)
+        reply_message = start_text + story_manager.generate_story(chat_id, start_text)
         update.message.reply_text(reply_message)
+
+    def update_generators(self, update: Update, context: CallbackContext) -> None:
+        rest_generators_configs: RestGenerators = read_rest_generators_config(self.generator_config_path)
+        pop_set = set(self.story_managers.keys()) - set(rest_generators_configs.generators.keys())
+        pop_set -= {"stub"}
+        for name in pop_set:
+            self.story_managers.pop(name)
+        for name, url in rest_generators_configs.generators.items():
+            self.story_managers[name] = StoryManager(RestApiGenerator(host_url=url,
+                                          context_length=5000))
+        update.message.reply_text("Generators updated")
+
+    def help_command(self, update: Update, context: CallbackContext) -> None:
+        """Send a message when the command /help is issued."""
+        generators_str = '\n'.join(self.story_managers.keys())
+        update.message.reply_text(
+            f"Select story generator:\n{generators_str} \n(Example: /set_generator stub)"
+        )
