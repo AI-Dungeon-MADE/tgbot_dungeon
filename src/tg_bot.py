@@ -41,7 +41,7 @@ class GameManager:
     def reply(self, update: Update, context: CallbackContext) -> None:
         """Echo the user message."""
         chat_id = update.message.chat_id
-        input_message = "\n >Вы сказали: " + update.message.text
+        input_message = "\n" + update.message.text
         logger.debug("Chat ID: {uid}, Input message: {im}", uid=chat_id, im=input_message)
         picked_sm = self.picked_story_manager.get(chat_id, "stub")
         logger.debug("picked story manager {psm}", psm=picked_sm)
@@ -80,7 +80,7 @@ class GameManager:
         story_manager = self.story_managers[picked_sm]
         if chat_id in story_manager.story_context_cache:
             story_manager.story_context_cache.pop(chat_id)
-        reply_message = story_manager.generate_story(chat_id, start_text)
+        reply_message = start_text + story_manager.generate_story(chat_id, start_text)
         update.message.reply_text(reply_message)
 
     def update_generators(self, update: Update, context: CallbackContext) -> None:
