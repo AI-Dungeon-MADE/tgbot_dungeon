@@ -93,6 +93,9 @@ class GameManager:
         for name in new_set:
             self.story_managers[name] = StoryManager(RestApiGenerator(host_url=rest_generators_configs.generators[name],
                                                          context_length=5000))
+        for k, v in self.picked_story_manager.items():
+            if v in pop_set:
+                self.picked_story_manager[k] = "stub"
         update.message.reply_text("Generators updated")
 
     def help_command(self, update: Update, context: CallbackContext) -> None:
