@@ -87,15 +87,11 @@ class GameManager:
         rest_generators_configs: RestGenerators = read_rest_generators_config(self.generator_config_path)
         pop_set = set(self.story_managers.keys()) - set(rest_generators_configs.generators.keys())
         pop_set -= {"stub"}
-        new_set = set(rest_generators_configs.generators.keys()) - set(self.story_managers.keys())
         for name in pop_set:
             self.story_managers.pop(name)
-        for name in new_set:
-            self.story_managers[name] = StoryManager(RestApiGenerator(host_url=rest_generators_configs.generators[name],
-                                                         context_length=5000))
-        for k, v in self.picked_story_manager.items():
-            if v in pop_set:
-                self.picked_story_manager[k] = "stub"
+        for name, url in rest_generators_configs.generators.items():
+            self.story_managers[name] = StoryManager(RestApiGenerator(host_url=url,
+                                          context_length=5000))
         update.message.reply_text("Generators updated")
 
     def help_command(self, update: Update, context: CallbackContext) -> None:
