@@ -1,2 +1,3 @@
 generators:
   colab_config: serverlink
+  my_server: my_link

@@ -1,4 +1,5 @@
-from typing import Dict
+import uuid
+from typing import Dict, Tuple
 
 from loguru import logger
 from made_ai_dungeon import StoryManager
@@ -8,7 +9,10 @@ from telegram import Update
 from telegram.ext import CallbackContext
 
 from src.entities import RestGenerators, read_rest_generators_config
+from src.game_logs import LogWriter
 from src.message_processing import process_message
+
+UNKNOWN_SESSION = "unknown session"
 
 
 # Define a few command handlers. These usually take the two arguments update and
@@ -37,6 +41,8 @@ class GameManager:
                           for name, url in rest_generators_configs.generators.items()}
         self.story_managers.update(url_generators)
         self.picked_story_manager: Dict[int, str] = {}
+        self.cur_story_uid: Dict[Tuple[int, str], str] = {}
+        self.log_writer = LogWriter("game_logs.csv")
 
     def reply(self, update: Update, context: CallbackContext) -> None:
         """Echo the user message."""
@@ -48,6 +54,18 @@ class GameManager:
         reply_message = self.story_managers[picked_sm].generate_story(chat_id, input_message)
         logger.debug(f"{reply_message=}")
         processed_reply_message = process_message(reply_message)
+        self.log_writer.write(
+            chat_id,
+            self.cur_story_uid.get((chat_id, picked_sm), UNKNOWN_SESSION),
+            "user",
+            input_message
+        )
+        self.log_writer.write(
+            chat_id,
+            self.cur_story_uid.get((chat_id, picked_sm), UNKNOWN_SESSION),
+            "bot",
+            processed_reply_message
+        )
         update.message.reply_text(processed_reply_message)
 
     def select_generator(self, update: Update, context: CallbackContext) -> None:
@@ -80,7 +98,14 @@ class GameManager:
         story_manager = self.story_managers[picked_sm]
         if chat_id in story_manager.story_context_cache:
             story_manager.story_context_cache.pop(chat_id)
+        self.cur_story_uid[(chat_id, picked_sm)] = str(uuid.uuid4())
         reply_message = start_text + story_manager.generate_story(chat_id, start_text)
+        self.log_writer.write(
+            chat_id,
+            self.cur_story_uid.get((chat_id, picked_sm), UNKNOWN_SESSION),
+            "bot",
+            reply_message
+        )
         update.message.reply_text(reply_message)
 
     def update_generators(self, update: Update, context: CallbackContext) -> None:
@@ -91,7 +116,7 @@ class GameManager:
             self.story_managers.pop(name)
         for name, url in rest_generators_configs.generators.items():
             self.story_managers[name] = StoryManager(RestApiGenerator(host_url=url,
-                                          context_length=5000))
+                                                                      context_length=5000))
         update.message.reply_text("Generators updated")
 
     def help_command(self, update: Update, context: CallbackContext) -> None:
