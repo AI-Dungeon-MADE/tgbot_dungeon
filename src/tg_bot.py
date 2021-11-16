@@ -33,7 +33,7 @@ def echo(update: Update, context: CallbackContext) -> None:
 
 class GameManager:
 
-    def __init__(self, generator_config_path: str) -> None:
+    def __init__(self, generator_config_path: str, logs_file: str) -> None:
         self.story_managers: Dict[StoryManager] = {"stub": StoryManager(GeneratorStub())}
         self.generator_config_path = generator_config_path
         rest_generators_configs: RestGenerators = read_rest_generators_config(self.generator_config_path)
@@ -42,7 +42,7 @@ class GameManager:
         self.story_managers.update(url_generators)
         self.picked_story_manager: Dict[int, str] = {}
         self.cur_story_uid: Dict[Tuple[int, str], str] = {}
-        self.log_writer = LogWriter("game_logs.csv")
+        self.log_writer = LogWriter(logs_file)
 
     def reply(self, update: Update, context: CallbackContext) -> None:
         """Echo the user message."""
@@ -57,12 +57,14 @@ class GameManager:
         self.log_writer.write(
             chat_id,
             self.cur_story_uid.get((chat_id, picked_sm), UNKNOWN_SESSION),
+            picked_sm,
             "user",
             input_message
         )
         self.log_writer.write(
             chat_id,
             self.cur_story_uid.get((chat_id, picked_sm), UNKNOWN_SESSION),
+            picked_sm,
             "bot",
             processed_reply_message
         )
@@ -103,6 +105,7 @@ class GameManager:
         self.log_writer.write(
             chat_id,
             self.cur_story_uid.get((chat_id, picked_sm), UNKNOWN_SESSION),
+            picked_sm,
             "bot",
             reply_message
         )
