@@ -100,6 +100,7 @@ class GameManager:
         if start_text is None:
             story_starts_str = '\n'.join(self.story_starts.keys())
             story_help = f"""\nДля начала игры нажмите /start_story <тема приключений>
+            Список тем:
             \n{story_starts_str}\n (Example /start_story cesar)"""
             update.message.reply_text(story_help)
         else:
