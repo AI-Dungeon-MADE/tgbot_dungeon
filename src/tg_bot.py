@@ -1,5 +1,5 @@
 import uuid
-from typing import Dict, Tuple
+from typing import Dict, Tuple, List
 
 from loguru import logger
 from made_ai_dungeon import StoryManager
@@ -22,7 +22,7 @@ def start(update: Update, context: CallbackContext) -> None:
     user = update.effective_user
     logger.info("/start done")
     update.message.reply_text(
-        fr'Hi {user.mention_markdown_v2()}\!',
+        fr'Hi {user.mention_markdown_v2()}\! \nДля получения информации введите /help',
     )  # reply_markdown_v2
 
 
@@ -33,7 +33,11 @@ def echo(update: Update, context: CallbackContext) -> None:
 
 class GameManager:
 
-    def __init__(self, generator_config_path: str, logs_file: str) -> None:
+    def __init__(
+            self, generator_config_path: str,
+            logs_file: str,
+            story_starts: Dict[str, List[str]],
+    ) -> None:
         self.story_managers: Dict[StoryManager] = {"stub": StoryManager(GeneratorStub())}
         self.generator_config_path = generator_config_path
         rest_generators_configs: RestGenerators = read_rest_generators_config(self.generator_config_path)
@@ -43,6 +47,7 @@ class GameManager:
         self.picked_story_manager: Dict[int, str] = {}
         self.cur_story_uid: Dict[Tuple[int, str], str] = {}
         self.log_writer = LogWriter(logs_file)
+        self.story_starts = story_starts
 
     def reply(self, update: Update, context: CallbackContext) -> None:
         """Echo the user message."""
@@ -91,25 +96,29 @@ class GameManager:
                 sm.story_context_cache.pop(chat_id)
 
     def start_story(self, update: Update, context: CallbackContext) -> None:
-        start_text = """Ты - Юлий Цезарь, консул Рима. Вы сражаетесь с галлами к северу от Римской республики, чтобы победить 
-        варварские племена, которые угрожают вашей великой нации. Вы входите в военный штаб и 
-        видите сегодняшний военный брифинг."""
-        chat_id = update.message.chat_id
-        logger.info("Chat ID {ci} started new story", ci=chat_id)
-        picked_sm = self.picked_story_manager.get(chat_id, "stub")
-        story_manager = self.story_managers[picked_sm]
-        if chat_id in story_manager.story_context_cache:
-            story_manager.story_context_cache.pop(chat_id)
-        self.cur_story_uid[(chat_id, picked_sm)] = str(uuid.uuid4())
-        reply_message = start_text + story_manager.generate_story(chat_id, start_text)
-        self.log_writer.write(
-            chat_id,
-            self.cur_story_uid.get((chat_id, picked_sm), UNKNOWN_SESSION),
-            picked_sm,
-            "bot",
-            reply_message
-        )
-        update.message.reply_text(reply_message)
+        start_text = self.story_starts.get(context.args[0])
+        if start_text is None:
+            story_starts_str = '\n'.join(self.story_starts.keys())
+            story_help = f"""\nДля начала игры нажмите /start_story <тема приключений>
+            \n{story_starts_str}\n (Example /start_story cesar)"""
+            update.message.reply_text(story_help)
+        else:
+            chat_id = update.message.chat_id
+            logger.info("Chat ID {ci} started new story", ci=chat_id)
+            picked_sm = self.picked_story_manager.get(chat_id, "stub")
+            story_manager = self.story_managers[picked_sm]
+            if chat_id in story_manager.story_context_cache:
+                story_manager.story_context_cache.pop(chat_id)
+            self.cur_story_uid[(chat_id, picked_sm)] = str(uuid.uuid4())
+            reply_message = start_text + story_manager.generate_story(chat_id, start_text)
+            self.log_writer.write(
+                chat_id,
+                self.cur_story_uid.get((chat_id, picked_sm), UNKNOWN_SESSION),
+                picked_sm,
+                "bot",
+                reply_message
+            )
+            update.message.reply_text(reply_message)
 
     def update_generators(self, update: Update, context: CallbackContext) -> None:
         rest_generators_configs: RestGenerators = read_rest_generators_config(self.generator_config_path)
@@ -125,6 +134,9 @@ class GameManager:
     def help_command(self, update: Update, context: CallbackContext) -> None:
         """Send a message when the command /help is issued."""
         generators_str = '\n'.join(self.story_managers.keys())
-        update.message.reply_text(
-            f"Select story generator:\n{generators_str} \n(Example: /set_generator stub)"
-        )
+        story_starts_str = '\n'.join(self.story_starts.keys())
+        generators_help = f"\nДля начала игры выберите генератор историй (по умолчанию будете получать эхо:-) ):\n{generators_str} \n(Example: /set_generator stub)"
+        start_help = "Я бот для игры AI DUNGEON на русском языке. (Выпускной проект в MADE VK)."
+        story_help = f"\nДля начала игры нажмите /start_story <тема приключений> \n{story_starts_str}\n (Example /start_story cesar)"
+        help_message = start_help + generators_help + story_help
+        update.message.reply_text(help_message)

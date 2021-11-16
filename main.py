@@ -11,7 +11,11 @@ def main() -> None:
     updater = Updater(os.environ["TOKEN"])
     config_path = "app/config/rest_generator_config.yaml"
     game_logs_file = "app/game_logs.csv"
-    game_manager = GameManager(config_path, game_logs_file)
+    start_text = """Ты - Юлий Цезарь, консул Рима. Вы сражаетесь с галлами к северу от Римской республики, чтобы победить 
+    варварские племена, которые угрожают вашей великой нации. Вы входите в военный штаб и 
+    видите сегодняшний военный брифинг."""
+    start_story_stub = {"cesar": [start_text]}
+    game_manager = GameManager(config_path, game_logs_file, start_story_stub)
 
     # Get the dispatcher to register handlers
     dispatcher = updater.dispatcher
