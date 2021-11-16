@@ -136,7 +136,7 @@ class GameManager:
         """Send a message when the command /help is issued."""
         generators_str = '\n'.join(self.story_managers.keys())
         story_starts_str = '\n'.join(self.story_starts.keys())
-        generators_help = f"\nДля начала игры выберите генератор историй (по умолчанию будете получать эхо:-) ):\n{generators_str} \n(Example: /set_generator stub)"
+        generators_help = f"\nДля начала игры выберите генератор историй (по умолчанию будете получать эхо :smile: ):\n{generators_str} \n(Example: /set_generator stub)"
         start_help = "Я бот для игры AI DUNGEON на русском языке. (Выпускной проект в MADE VK)."
         story_help = f"\nДля начала игры нажмите /start_story <тема приключений> \n{story_starts_str}\n (Example /start_story cesar)"
         help_message = start_help + generators_help + story_help
