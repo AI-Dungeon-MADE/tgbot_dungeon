@@ -1,4 +1,5 @@
 import uuid
+import random
 from typing import Dict, Tuple, List
 
 from loguru import logger
@@ -96,14 +97,15 @@ class GameManager:
                 sm.story_context_cache.pop(chat_id)
 
     def start_story(self, update: Update, context: CallbackContext) -> None:
-        start_text = self.story_starts.get(context.args[0])
-        if start_text is None:
+        start_text_lts = self.story_starts.get(context.args[0])
+        if start_text_lts is None:
             story_starts_str = '\n'.join(self.story_starts.keys())
             story_help = f"""\nДля начала игры нажмите /start_story <тема приключений>
             Список тем:
-            \n{story_starts_str}\n (Example /start_story cesar)"""
+            \n{story_starts_str}\n (Example /start_story Киберпанк)"""
             update.message.reply_text(story_help)
         else:
+            start_text = random.choice(start_text_lts)
             chat_id = update.message.chat_id
             logger.info("Chat ID {ci} started new story", ci=chat_id)
             picked_sm = self.picked_story_manager.get(chat_id, "stub")
@@ -138,6 +140,6 @@ class GameManager:
         story_starts_str = '\n'.join(self.story_starts.keys())
         generators_help = f"\nДля начала игры выберите генератор историй (по умолчанию будете получать эхо :smile: ):\n{generators_str} \n(Example: /set_generator stub)"
         start_help = "Я бот для игры AI DUNGEON на русском языке. (Выпускной проект в MADE VK)."
-        story_help = f"\nДля начала игры нажмите /start_story <тема приключений> \n{story_starts_str}\n (Example /start_story cesar)"
+        story_help = f"\nДля начала игры нажмите /start_story <тема приключений> \n{story_starts_str}\n (Example /start_story Киберпанк)"
         help_message = start_help + generators_help + story_help
         update.message.reply_text(help_message)

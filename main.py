@@ -2,6 +2,7 @@ import os
 
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
 
+from src.helpers import load_prompts
 from src.tg_bot import start, GameManager
 
 
@@ -11,11 +12,8 @@ def main() -> None:
     updater = Updater(os.environ["TOKEN"])
     config_path = "app/config/rest_generator_config.yaml"
     game_logs_file = "app/game_logs.csv"
-    start_text = """Ты - Юлий Цезарь, консул Рима. Вы сражаетесь с галлами к северу от Римской республики, чтобы победить 
-    варварские племена, которые угрожают вашей великой нации. Вы входите в военный штаб и 
-    видите сегодняшний военный брифинг."""
-    start_story_stub = {"cesar": [start_text]}
-    game_manager = GameManager(config_path, game_logs_file, start_story_stub)
+    start_story_dict = load_prompts("app/data/prompts.json")
+    game_manager = GameManager(config_path, game_logs_file, start_story_dict)
 
     # Get the dispatcher to register handlers
     dispatcher = updater.dispatcher
