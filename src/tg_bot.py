@@ -53,7 +53,7 @@ class GameManager:
     def reply(self, update: Update, context: CallbackContext) -> None:
         """Echo the user message."""
         chat_id = update.message.chat_id
-        input_message = "\n" + update.message.text
+        input_message = "\n> Вы" + update.message.text
         logger.debug("Chat ID: {uid}, Input message: {im}", uid=chat_id, im=input_message)
         picked_sm = self.picked_story_manager.get(chat_id, "default")
         logger.debug("picked story manager {psm}", psm=picked_sm)
@@ -97,7 +97,9 @@ class GameManager:
                 sm.story_context_cache.pop(chat_id)
 
     def start_story(self, update: Update, context: CallbackContext) -> None:
-        start_text_lts = self.story_starts.get(context.args[0])
+        start_text_lts = None
+        if len(context.args) != 0:
+            start_text_lts = self.story_starts.get(context.args[0])
         if start_text_lts is None:
             random_key = random.choice(list(self.story_starts.keys()))
             update.message.reply_text(f"Автоматически выбранная тема игры: {random_key}")
@@ -133,10 +135,10 @@ class GameManager:
 
     def help_command(self, update: Update, context: CallbackContext) -> None:
         """Send a message when the command /help is issued."""
-        generators_str = '\n'.join(self.story_managers.keys())
+        # generators_str = '\n'.join(self.story_managers.keys())
         story_starts_str = '\n'.join(self.story_starts.keys())
-        generators_help = f"\nДля начала игры выберите генератор историй (по умолчанию будете получать эхо :smile: ):\n{generators_str} \n(Example: /set_generator stub)"
+        # generators_help = f"\nДля начала игры выберите генератор историй (по умолчанию будете получать эхо :smile: ):\n{generators_str} \n(Example: /set_generator stub)"
         start_help = "Я бот для игры AI DUNGEON на русском языке. (Выпускной проект в MADE VK)."
-        story_help = f"\nДля начала игры нажмите /start_story <тема приключений> \n{story_starts_str}\n (Example /start_story Киберпанк)"
-        help_message = start_help + generators_help + story_help
+        story_help = f"\nДля начала игры нажмите /start_story <тема приключений>\nТемы:\n{story_starts_str}\n (Example /start_story Киберпанк)"
+        help_message = start_help + story_help
         update.message.reply_text(help_message)
