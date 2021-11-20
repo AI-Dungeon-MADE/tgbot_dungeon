@@ -55,7 +55,7 @@ class GameManager:
         chat_id = update.message.chat_id
         input_message = "\n" + update.message.text
         logger.debug("Chat ID: {uid}, Input message: {im}", uid=chat_id, im=input_message)
-        picked_sm = self.picked_story_manager.get(chat_id, "stub")
+        picked_sm = self.picked_story_manager.get(chat_id, "default")
         logger.debug("picked story manager {psm}", psm=picked_sm)
         reply_message = self.story_managers[picked_sm].generate_story(chat_id, input_message)
         logger.debug(f"{reply_message=}")
@@ -99,29 +99,26 @@ class GameManager:
     def start_story(self, update: Update, context: CallbackContext) -> None:
         start_text_lts = self.story_starts.get(context.args[0])
         if start_text_lts is None:
-            story_starts_str = '\n'.join(self.story_starts.keys())
-            story_help = f"""\nДля начала игры нажмите /start_story <тема приключений>
-            Список тем:
-            \n{story_starts_str}\n (Example /start_story Киберпанк)"""
-            update.message.reply_text(story_help)
-        else:
-            start_text = random.choice(start_text_lts)
-            chat_id = update.message.chat_id
-            logger.info("Chat ID {ci} started new story", ci=chat_id)
-            picked_sm = self.picked_story_manager.get(chat_id, "stub")
-            story_manager = self.story_managers[picked_sm]
-            if chat_id in story_manager.story_context_cache:
-                story_manager.story_context_cache.pop(chat_id)
-            self.cur_story_uid[(chat_id, picked_sm)] = str(uuid.uuid4())
-            reply_message = start_text + story_manager.generate_story(chat_id, start_text)
-            self.log_writer.write(
-                chat_id,
-                self.cur_story_uid.get((chat_id, picked_sm), UNKNOWN_SESSION),
-                picked_sm,
-                "bot",
-                reply_message
-            )
-            update.message.reply_text(reply_message)
+            random_key = random.choice(list(self.story_starts.keys()))
+            update.message.reply_text(f"Автоматически выбранная тема игры: {random_key}")
+            start_text_lts = self.story_starts[random_key]
+        start_text = random.choice(start_text_lts)
+        chat_id = update.message.chat_id
+        logger.info("Chat ID {ci} started new story", ci=chat_id)
+        picked_sm = self.picked_story_manager.get(chat_id, "default")
+        story_manager = self.story_managers[picked_sm]
+        if chat_id in story_manager.story_context_cache:
+            story_manager.story_context_cache.pop(chat_id)
+        self.cur_story_uid[(chat_id, picked_sm)] = str(uuid.uuid4())
+        reply_message = start_text + story_manager.generate_story(chat_id, start_text)
+        self.log_writer.write(
+            chat_id,
+            self.cur_story_uid.get((chat_id, picked_sm), UNKNOWN_SESSION),
+            picked_sm,
+            "bot",
+            reply_message
+        )
+        update.message.reply_text(reply_message)
 
     def update_generators(self, update: Update, context: CallbackContext) -> None:
         rest_generators_configs: RestGenerators = read_rest_generators_config(self.generator_config_path)
