@@ -92,7 +92,7 @@ class GameManager:
 
     def reset_context(self, update: Update, context: CallbackContext) -> None:
         chat_id = update.message.chat_id
-        for sm in self.story_managers:
+        for sm in self.story_managers.values():
             if chat_id in sm.story_context_cache:
                 sm.story_context_cache.pop(chat_id)
         update.message.reply_text("Вам понравилось? \n Пожалуйста, заполните форму с вашими впечатлениями об игре, это поможет нам стать лучше. Спасибо!\nhttps://ru.surveymonkey.com/r/63HC7NV ")
