@@ -95,6 +95,7 @@ class GameManager:
         for sm in self.story_managers:
             if chat_id in sm.story_context_cache:
                 sm.story_context_cache.pop(chat_id)
+        update.message.reply_text("Вам понравилось? \n Пожалуйста, заполните форму с вашими впечатлениями об игре, это поможет нам стать лучше. Спасибо!\nhttps://ru.surveymonkey.com/r/63HC7NV ")
 
     def start_story(self, update: Update, context: CallbackContext) -> None:
         start_text_lts = None
@@ -139,6 +140,7 @@ class GameManager:
         story_starts_str = '\n'.join(self.story_starts.keys())
         # generators_help = f"\nДля начала игры выберите генератор историй (по умолчанию будете получать эхо :smile: ):\n{generators_str} \n(Example: /set_generator stub)"
         start_help = "Я бот для игры AI DUNGEON на русском языке. (Выпускной проект в MADE VK)."
-        story_help = f"\nДля начала игры нажмите /start_story <тема приключений>\nТемы:\n{story_starts_str}\n (Example /start_story Киберпанк)"
-        help_message = start_help + story_help
+        story_start_help = f"\nДля начала игры нажмите /start_story <тема приключений>\nТемы:\n{story_starts_str}\n (Example /start_story Киберпанк)"
+        story_end_help = "\n Для завершения истории нажмите /end_story"
+        help_message = start_help + story_start_help + story_end_help
         update.message.reply_text(help_message)
