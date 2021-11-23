@@ -1,12 +1,12 @@
-import uuid
 import random
+import uuid
 from typing import Dict, Tuple, List
 
 from loguru import logger
 from made_ai_dungeon import StoryManager
 from made_ai_dungeon.models.generator_stub import GeneratorStub
 from made_ai_dungeon.models.rest_api_generator import RestApiGenerator
-from telegram import Update
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import CallbackContext
 
 from src.entities import RestGenerators, read_rest_generators_config
@@ -22,14 +22,12 @@ def start(update: Update, context: CallbackContext) -> None:
     """Send a message when the command /start is issued."""
     user = update.effective_user
     logger.info("/start done")
+    keyboard = [[InlineKeyboardButton("Help", callback_data='/help')]]
+    reply_markup = InlineKeyboardMarkup(keyboard)
     update.message.reply_text(
         fr'Hi {user.mention_markdown_v2()}\! \nДля получения информации введите /help',
+        reply_markup=reply_markup,
     )  # reply_markdown_v2
-
-
-def echo(update: Update, context: CallbackContext) -> None:
-    """Echo the user message."""
-    update.message.reply_text(update.message.text)
 
 
 class GameManager:
@@ -95,7 +93,8 @@ class GameManager:
         for sm in self.story_managers.values():
             if chat_id in sm.story_context_cache:
                 sm.story_context_cache.pop(chat_id)
-        update.message.reply_text("Вам понравилось? \n Пожалуйста, заполните форму с вашими впечатлениями об игре, это поможет нам стать лучше. Спасибо!\nhttps://ru.surveymonkey.com/r/63HC7NV ")
+        update.message.reply_text(
+            "Вам понравилось? \n Пожалуйста, заполните форму с вашими впечатлениями об игре, это поможет нам стать лучше. Спасибо!\nhttps://ru.surveymonkey.com/r/63HC7NV ")
 
     def start_story(self, update: Update, context: CallbackContext) -> None:
         start_text_lts = None
