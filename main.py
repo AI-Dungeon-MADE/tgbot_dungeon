@@ -1,31 +1,35 @@
 import os
 
-from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
+from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, CallbackQueryHandler
 
 from src.helpers import load_prompts
-from src.tg_bot import start, GameManager
+from src.tg_bot import GameManager
 
 
 def main() -> None:
     """Start the bot."""
     # Create the Updater and pass it your bot's token.
     updater = Updater(os.environ["TOKEN"])
-    config_path = "app/config/rest_generator_config.yaml"
-    game_logs_file = "app/game_logs.csv"
-    start_story_dict = load_prompts("app/data/prompts.json")
+    # config_path = "app/config/rest_generator_config.yaml"
+    config_path = "config/rest_generator_config.yaml"
+    # game_logs_file = "app/game_logs.csv"
+    game_logs_file = "game_logs.csv"
+    start_story_dict = load_prompts("data/prompts.json")
+    # start_story_dict = load_prompts("app/data/prompts.json")
     game_manager = GameManager(config_path, game_logs_file, start_story_dict)
 
     # Get the dispatcher to register handlers
     dispatcher = updater.dispatcher
 
     # on different commands - answer in Telegram
-    dispatcher.add_handler(CommandHandler("start", start))
+    dispatcher.add_handler(CommandHandler("start", game_manager.start))
     dispatcher.add_handler(CommandHandler("help", game_manager.help_command))
     dispatcher.add_handler(CommandHandler("set_generator", game_manager.select_generator))
     dispatcher.add_handler(CommandHandler("end_story", game_manager.reset_context))
     dispatcher.add_handler(CommandHandler("start_story", game_manager.start_story))
     dispatcher.add_handler(CommandHandler("update_generators", game_manager.update_generators))
-
+    dispatcher.add_handler(CallbackQueryHandler(game_manager.help_command, pattern="help"))
+    dispatcher.add_handler(CallbackQueryHandler(game_manager.get_stories, pattern="get_stories"))
     # on non command i.e message - echo the message on Telegram
     dispatcher.add_handler(MessageHandler(Filters.text & ~Filters.command, game_manager.reply))
 

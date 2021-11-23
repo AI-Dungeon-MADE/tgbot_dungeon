@@ -11,6 +11,7 @@ from telegram.ext import CallbackContext
 
 from src.entities import RestGenerators, read_rest_generators_config
 from src.game_logs import LogWriter
+from src.helpers import get_story_keyboard
 from src.message_processing import process_message
 
 UNKNOWN_SESSION = "unknown session"
@@ -18,16 +19,6 @@ UNKNOWN_SESSION = "unknown session"
 
 # Define a few command handlers. These usually take the two arguments update and
 # context.
-def start(update: Update, context: CallbackContext) -> None:
-    """Send a message when the command /start is issued."""
-    user = update.effective_user
-    logger.info("/start done")
-    keyboard = [[InlineKeyboardButton("Help", callback_data="help")]]
-    reply_markup = InlineKeyboardMarkup(keyboard)
-    update.message.reply_text(
-        fr'Hi {user.mention_markdown_v2()}\! \nДля получения информации введите /help',
-        reply_markup=reply_markup,
-    )  # reply_markdown_v2
 
 
 class GameManager:
@@ -135,6 +126,8 @@ class GameManager:
 
     def help_command(self, update: Update, context: CallbackContext) -> None:
         """Send a message when the command /help is issued."""
+        if update.callback_query is not None:
+            update = update.callback_query
         # generators_str = '\n'.join(self.story_managers.keys())
         story_starts_str = '\n'.join(self.story_starts.keys())
         # generators_help = f"\nДля начала игры выберите генератор историй (по умолчанию будете получать эхо :smile: ):\n{generators_str} \n(Example: /set_generator stub)"
@@ -143,3 +136,27 @@ class GameManager:
         story_end_help = "\n Для завершения истории нажмите /end_story"
         help_message = start_help + story_start_help + story_end_help
         update.message.reply_text(help_message)
+
+    def start(self, update: Update, context: CallbackContext) -> None:
+        """Send a message when the command /start is issued."""
+        user = update.effective_user
+        logger.info("/start done")
+        keyboard = [
+            [
+                InlineKeyboardButton("Help", callback_data="help"),
+                InlineKeyboardButton("Начать игру", callback_data="get_stories")
+            ],
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        update.message.reply_text(
+            fr'Hi {user.mention_markdown_v2()}\! \nДля получения информации введите /help',
+            reply_markup=reply_markup,
+        )
+
+    def get_stories(self, update: Update, context: CallbackContext) -> None:
+        keyboard = get_story_keyboard(list(self.story_starts.keys()))
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        update.callback_query.message.reply_text(
+            "Выберите тему, чтобы начать свою историю",
+            reply_markup=reply_markup,
+        )
