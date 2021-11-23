@@ -22,7 +22,7 @@ def start(update: Update, context: CallbackContext) -> None:
     """Send a message when the command /start is issued."""
     user = update.effective_user
     logger.info("/start done")
-    keyboard = [[InlineKeyboardButton("Help", callback_data='/help')]]
+    keyboard = [[InlineKeyboardButton("Help", callback_data="help")]]
     reply_markup = InlineKeyboardMarkup(keyboard)
     update.message.reply_text(
         fr'Hi {user.mention_markdown_v2()}\! \nДля получения информации введите /help',
