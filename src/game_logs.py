@@ -3,7 +3,7 @@ import time
 
 
 class LogWriter:
-    def __init__(self, filename) -> None:
+    def __init__(self, filename: str) -> None:
         self.filename = filename
 
     def write(self, chat_id: int, session_uid: str, instance: str, source: str, text: str) -> None:

@@ -11,7 +11,7 @@ from telegram.ext import CallbackContext
 
 from src.entities import RestGenerators, read_rest_generators_config
 from src.game_logs import LogWriter
-from src.helpers import get_story_keyboard
+from src.helpers import get_keyboard
 from src.message_processing import process_message
 
 UNKNOWN_SESSION = "unknown session"
@@ -46,24 +46,32 @@ class GameManager:
         logger.debug("Chat ID: {uid}, Input message: {im}", uid=chat_id, im=input_message)
         picked_sm = self.picked_story_manager.get(chat_id, "default")
         logger.debug("picked story manager {psm}", psm=picked_sm)
-        reply_message = self.story_managers[picked_sm].generate_story(chat_id, input_message)
-        logger.debug(f"{reply_message=}")
-        processed_reply_message = process_message(reply_message)
-        self.log_writer.write(
-            chat_id,
-            self.cur_story_uid.get((chat_id, picked_sm), UNKNOWN_SESSION),
-            picked_sm,
-            "user",
-            input_message
-        )
-        self.log_writer.write(
-            chat_id,
-            self.cur_story_uid.get((chat_id, picked_sm), UNKNOWN_SESSION),
-            picked_sm,
-            "bot",
-            processed_reply_message
-        )
-        update.message.reply_text(processed_reply_message)
+        story_uid = self.cur_story_uid.get((chat_id, picked_sm))
+        if story_uid is None:
+            keyboard = [[InlineKeyboardButton("Начать игру", callback_data="get_stories")]]
+            reply_markup = InlineKeyboardMarkup(keyboard)
+            update.message.reply_text("Для начала игры нажми сюда", reply_markup=reply_markup)
+        else:
+            reply_message = self.story_managers[picked_sm].generate_story(chat_id, input_message)
+            logger.debug(f"{reply_message=}")
+            processed_reply_message = process_message(reply_message)
+            self.log_writer.write(
+                chat_id,
+                story_uid,
+                picked_sm,
+                "user",
+                input_message
+            )
+            self.log_writer.write(
+                chat_id,
+                story_uid,
+                picked_sm,
+                "bot",
+                processed_reply_message
+            )
+            keyboard = [[InlineKeyboardButton("Закончить игру", callback_data="end_story")]]
+            reply_markup = InlineKeyboardMarkup(keyboard)
+            update.message.reply_text(processed_reply_message, reply_markup=reply_markup)
 
     def select_generator(self, update: Update, context: CallbackContext) -> None:
         chat_id = update.message.chat_id
@@ -79,6 +87,14 @@ class GameManager:
         except (IndexError, ValueError):
             update.message.reply_text(f"Usage: /set_generator <{generators_str}>")
 
+    def select_generator_callback(self, update, context: CallbackContext) -> None:
+        chat_id = update.callback_query.message.chat_id
+        picked_sm = update.callback_query.data[17:]
+        self.picked_story_manager[chat_id] = picked_sm
+        keyboard = [[InlineKeyboardButton("Начать игру", callback_data="get_stories")]]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        update.callback_query.message.reply_text(f"Генератор: {picked_sm}", reply_markup=reply_markup)
+
     def reset_context(self, update: Update, context: CallbackContext) -> None:
         chat_id = update.message.chat_id
         for sm in self.story_managers.values():
@@ -87,10 +103,19 @@ class GameManager:
         update.message.reply_text(
             "Вам понравилось? \n Пожалуйста, заполните форму с вашими впечатлениями об игре, это поможет нам стать лучше. Спасибо!\nhttps://ru.surveymonkey.com/r/63HC7NV ")
 
-    def start_story(self, update: Update, context: CallbackContext) -> None:
-        start_text_lts = None
+    def start_story_command(self, update: Update, context: CallbackContext) -> None:
+        story_name = None
         if len(context.args) != 0:
-            start_text_lts = self.story_starts.get(context.args[0])
+            story_name = context.args[0]
+        self.start_story_process(update, story_name)
+
+    def start_story_callback(self, update: Update, context: CallbackContext) -> None:
+        logger.debug("Start story debug {d}", d=update.callback_query.data)
+        story_name = update.callback_query.data[12:]
+        self.start_story_process(update.callback_query, story_name)
+
+    def start_story_process(self, update: Update, story_name: str) -> None:
+        start_text_lts = self.story_starts.get(story_name)
         if start_text_lts is None:
             random_key = random.choice(list(self.story_starts.keys()))
             update.message.reply_text(f"Автоматически выбранная тема игры: {random_key}")
@@ -128,14 +153,18 @@ class GameManager:
         """Send a message when the command /help is issued."""
         if update.callback_query is not None:
             update = update.callback_query
-        # generators_str = '\n'.join(self.story_managers.keys())
-        story_starts_str = '\n'.join(self.story_starts.keys())
-        # generators_help = f"\nДля начала игры выберите генератор историй (по умолчанию будете получать эхо :smile: ):\n{generators_str} \n(Example: /set_generator stub)"
         start_help = "Я бот для игры AI DUNGEON на русском языке. (Выпускной проект в MADE VK)."
-        story_start_help = f"\nДля начала игры нажмите /start_story <тема приключений>\nТемы:\n{story_starts_str}\n (Example /start_story Киберпанк)"
-        story_end_help = "\n Для завершения истории нажмите /end_story"
-        help_message = start_help + story_start_help + story_end_help
-        update.message.reply_text(help_message)
+        story_start_help = "\nДля начала игры нажмите Начать игру"
+        generator_help = "\nДля выбора генератора текста нажмите на Выбрать генератор"
+        help_message = start_help + story_start_help + generator_help
+        keyboard = [
+            [
+                InlineKeyboardButton("Начать игру", callback_data="get_stories"),
+                InlineKeyboardButton("Выбор генератора", callback_data="get_generators"),
+            ],
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        update.message.reply_text(help_message, reply_markup=reply_markup)
 
     def start(self, update: Update, context: CallbackContext) -> None:
         """Send a message when the command /start is issued."""
@@ -149,14 +178,47 @@ class GameManager:
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
         update.message.reply_text(
-            fr'Hi {user.mention_markdown_v2()}\! \nДля получения информации введите /help',
+            f'Привет {user.full_name}!\nДоброе пожаловать в AI DUNGEON на русском',
             reply_markup=reply_markup,
         )
 
     def get_stories(self, update: Update, context: CallbackContext) -> None:
-        keyboard = get_story_keyboard(list(self.story_starts.keys()))
+        keyboard = get_keyboard(list(self.story_starts.keys()), "start_story")
         reply_markup = InlineKeyboardMarkup(keyboard)
         update.callback_query.message.reply_text(
             "Выберите тему, чтобы начать свою историю",
             reply_markup=reply_markup,
         )
+
+    def get_generators(self, update: Update, context: CallbackContext) -> None:
+        keyboard = get_keyboard(list(self.story_managers.keys()), "select_generator")
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        update.callback_query.message.reply_text(
+            "Выбор генератора",
+            reply_markup=reply_markup,
+        )
+
+    def end_story(self, update: Update, context: CallbackContext) -> None:
+        keyboard = [[InlineKeyboardButton(str(i), callback_data=f"game_score {i}") for i in range(1, 6)]]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        update.callback_query.message.reply_text(
+            "Оцените игру по 5-и бальной шкале. Также Вы можете оставить более полный отзыв заполнив опросник, "
+            "это поможет на стать лучше.\nhttps://ru.surveymonkey.com/r/63HC7NV",
+            reply_markup=reply_markup,
+        )
+
+    def log_game_score(self, update: Update, context: CallbackContext) -> None:
+        chat_id = update.callback_query.message.chat_id
+        picked_sm = self.picked_story_manager.get(chat_id, "default")
+        story_uid = self.cur_story_uid.get((chat_id, picked_sm), UNKNOWN_SESSION)
+        self.log_writer.write(
+            chat_id,
+            story_uid,
+            picked_sm,
+            "game_score",
+            update.callback_query.data[11:],
+        )
+        keyboard = [[InlineKeyboardButton("Начать новую игру", callback_data="get_stories")]]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        update.callback_query.message.reply_text("Спасибо!\nДля начала новой игры нажми сюда",
+                                                 reply_markup=reply_markup)

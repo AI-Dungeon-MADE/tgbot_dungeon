@@ -10,10 +10,10 @@ def load_prompts(path: str) -> Dict[str, List[str]]:
     return data
 
 
-def get_story_keyboard(story_list: List[str]) -> List[InlineKeyboardButton]:
+def get_keyboard(story_list: List[str], prefix: str = "start_story") -> List[InlineKeyboardButton]:
     keyboard = []
     for story_name in story_list:
         keyboard.append([
-            InlineKeyboardButton(story_name, callback_data=f"start_story {story_name}"),
+            InlineKeyboardButton(story_name, callback_data=f"{prefix} {story_name}"),
         ])
     return keyboard

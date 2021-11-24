@@ -10,12 +10,9 @@ def main() -> None:
     """Start the bot."""
     # Create the Updater and pass it your bot's token.
     updater = Updater(os.environ["TOKEN"])
-    # config_path = "app/config/rest_generator_config.yaml"
-    config_path = "config/rest_generator_config.yaml"
-    # game_logs_file = "app/game_logs.csv"
-    game_logs_file = "game_logs.csv"
-    start_story_dict = load_prompts("data/prompts.json")
-    # start_story_dict = load_prompts("app/data/prompts.json")
+    config_path = "app/config/rest_generator_config.yaml"
+    game_logs_file = "app/game_logs.csv"
+    start_story_dict = load_prompts("app/data/prompts.json")
     game_manager = GameManager(config_path, game_logs_file, start_story_dict)
 
     # Get the dispatcher to register handlers
@@ -26,10 +23,16 @@ def main() -> None:
     dispatcher.add_handler(CommandHandler("help", game_manager.help_command))
     dispatcher.add_handler(CommandHandler("set_generator", game_manager.select_generator))
     dispatcher.add_handler(CommandHandler("end_story", game_manager.reset_context))
-    dispatcher.add_handler(CommandHandler("start_story", game_manager.start_story))
+    dispatcher.add_handler(CommandHandler("start_story", game_manager.start_story_command))
     dispatcher.add_handler(CommandHandler("update_generators", game_manager.update_generators))
     dispatcher.add_handler(CallbackQueryHandler(game_manager.help_command, pattern="help"))
     dispatcher.add_handler(CallbackQueryHandler(game_manager.get_stories, pattern="get_stories"))
+    dispatcher.add_handler(CallbackQueryHandler(game_manager.start_story_callback, pattern=r"start_story[\w\d\s]+"))
+    dispatcher.add_handler(CallbackQueryHandler(game_manager.get_generators, pattern="get_generators"))
+    dispatcher.add_handler(CallbackQueryHandler(game_manager.select_generator_callback, pattern=r"select_generator[\w\d\s]+"))
+    dispatcher.add_handler(CallbackQueryHandler(game_manager.end_story, pattern="end_story"))
+    dispatcher.add_handler(CallbackQueryHandler(game_manager.log_game_score, pattern=r"game_score[\w\d\s]+"))
+    # dispatcher.add_handler(CallbackQueryHandler(game_manager.select_generator_callback, pattern=r"game_score[\w\d\s]+"))
     # on non command i.e message - echo the message on Telegram
     dispatcher.add_handler(MessageHandler(Filters.text & ~Filters.command, game_manager.reply))
 
