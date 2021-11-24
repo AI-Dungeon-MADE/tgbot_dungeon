@@ -218,7 +218,12 @@ class GameManager:
             "game_score",
             update.callback_query.data[11:],
         )
-        keyboard = [[InlineKeyboardButton("Начать новую игру", callback_data="get_stories")]]
+        keyboard = [
+            [
+                InlineKeyboardButton("Help", callback_data="help"),
+                InlineKeyboardButton("Начать новую игру", callback_data="get_stories")
+            ]
+        ]
         reply_markup = InlineKeyboardMarkup(keyboard)
         update.callback_query.message.reply_text("Спасибо!\nДля начала новой игры нажми сюда",
                                                  reply_markup=reply_markup)
