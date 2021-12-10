@@ -1,12 +1,12 @@
-import json
+import yaml
 from typing import Dict, List
 
 from telegram import InlineKeyboardButton
 
 
 def load_prompts(path: str) -> Dict[str, List[str]]:
-    with open(path) as json_file:
-        data = json.load(json_file)
+    with open(path, 'r') as file:
+        data = yaml.safe_load(file)
     return data
 
 

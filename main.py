@@ -12,7 +12,7 @@ def main() -> None:
     updater = Updater(os.environ["TOKEN"])
     config_path = "app/config/rest_generator_config.yaml"
     game_logs_file = "app/game_logs.csv"
-    start_story_dict = load_prompts("app/data/prompts.json")
+    start_story_dict = load_prompts("app/data/prompts.yaml")
     game_manager = GameManager(config_path, game_logs_file, start_story_dict)
 
     # Get the dispatcher to register handlers
