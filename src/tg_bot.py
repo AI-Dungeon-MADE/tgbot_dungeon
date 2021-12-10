@@ -42,7 +42,7 @@ class GameManager:
     def reply(self, update: Update, context: CallbackContext) -> None:
         """Echo the user message."""
         chat_id = update.message.chat_id
-        input_message = "\n>Вы " + update.message.text
+        input_message = "\n> " + update.message.text
         logger.debug("Chat ID: {uid}, Input message: {im}", uid=chat_id, im=input_message)
         picked_sm = self.picked_story_manager.get(chat_id, "default")
         logger.debug("picked story manager {psm}", psm=picked_sm)
